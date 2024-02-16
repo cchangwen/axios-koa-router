@@ -11,9 +11,9 @@ const config: CreateAxiosDefaults = {
 
 if(import.meta.env.VITE_AXIOS_MOCK) {
 	config.adapter = await (await import('axios-mock-request')).default({
-        // where to load your mock-routes
+		// where to load your mock-routes
 		routerImport: '/@/mocks/index.ts',
-        // callback for debug
+		// callback for debug
 		beforeResponse(ctx) { console.log(ctx) }
 	})
 }
@@ -40,8 +40,18 @@ const router = new Router()
 
 router.use(/^\/TEST\/\d+$/i, test)
 
+router.use((ctx, next) => {
+	// auth check
+	if (ctx.req.headers.get('x-token') === 'wrong') {
+		ctx.body = { error: 'auth failed' }
+	} else {
+		next()
+    }
+})
+
 router.get(/^\/test\/\d+$/, (ctx) => {
-	ctx.body = '/^\/test\/\d+$/ <== ' + ctx.req.path
+	// Jump out from mocks, requests internet
+	ctx.bypass = true
 })
 
 router.get('/test/:from(\\d+)-:to', (ctx) => {
