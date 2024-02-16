@@ -11,18 +11,27 @@ const config: CreateAxiosDefaults = {
 
 if(import.meta.env.VITE_AXIOS_MOCK) {
 	config.adapter = await (await import('axios-mock-request')).default({
-		routerImport: '/@/mocks',
-		beforeResponse(ctx) {
-			console.log(ctx)
-		}
+        // where to load your mock-routes
+		routerImport: '/@/mocks/index.ts',
+        // callback for debug
+		beforeResponse(ctx) { console.log(ctx) }
 	})
 }
 
-const service = axios.create(config);
+const net = axios.create(config);
+
+
+net.get('/test/john?a=1&a=2&b[]=1&c[]=3&c[]=4&c[k]=5').then(res => console.log(res))
+net.get('/test/8754/666').then(res => console.log(res))
+net.get('/test/my.car').then(res => console.log(res))
+net.get('/test/2024-2030').then(res => console.log(res))
+net.get('/test/foo-bar').then(res => console.log(res))
+net.get('/test/bbccdd/ok?a=1').then(res => console.log(res))
+net.get('/test/a/b/c/d/e').then(res => console.log(res))
 
 ```
 
-### Router
+### mocks/index.ts
 ```typescript
 import Router from 'axios-mock-request/router'
 import test from './test'
@@ -31,23 +40,23 @@ const router = new Router()
 
 router.use(/^\/TEST\/\d+$/i, test)
 
-router.use(/^\/test\/\d+$/, (ctx) => {
-	ctx.body = 'regex ' + ctx.config.url
+router.get(/^\/test\/\d+$/, (ctx) => {
+	ctx.body = '/^\/test\/\d+$/ <== ' + ctx.req.path
 })
 
-router.use('/test/:from(\\d+)-:to', (ctx) => {
+router.get('/test/:from(\\d+)-:to', (ctx) => {
 	ctx.body = '/test/:from(\\d+)-:to <== ' + ctx.req.path
 })
 
-router.use('/test/:name', (ctx) => {
+router.get('/test/:name', (ctx) => {
 	ctx.body = '/test/:name <== ' + ctx.req.path
 })
 
-router.use('/test/(aa)?(bb)+cc*/:name', (ctx) => {
+router.get('/test/(aa)?(bb)+cc*/:name', (ctx) => {
 	ctx.body = '/test/(aa)?(bb)+cc*/:name <== ' + ctx.req.path
 })
 
-router.use('/test/**', (ctx) => {
+router.get('/test/**', (ctx) => {
 	ctx.body = '/test/** <== ' + ctx.req.path
 })
 
@@ -55,7 +64,7 @@ export default router
 
 ```
 
-### test/index.ts
+### mocks/test/index.ts
 ```typescript
 import Router from 'axios-mock-request/router'
 
@@ -68,5 +77,7 @@ router.get('/:id', (ctx) => {
 export default router
 
 ```
+
+Router Path Syntax
 
 https://expressjs.com/en/guide/routing.html
