@@ -10,10 +10,11 @@ const config: CreateAxiosDefaults = {
 }
 
 if(import.meta.env.VITE_AXIOS_MOCK) {
+	// Use asynchronous import() to reduce the entry size of the production
 	config.adapter = await (await import('axios-mock-request')).default({
 		// where to load your mock-routes
 		routerImport: '/@/mocks/index.ts',
-		// callback for debug
+		// callback for debugs
 		beforeResponse(ctx) { console.log(ctx) }
 	})
 }
@@ -21,13 +22,13 @@ if(import.meta.env.VITE_AXIOS_MOCK) {
 const net = axios.create(config);
 
 
-net.get('/test/john?a=1&a=2&b[]=1&c[]=3&c[]=4&c[k]=5').then(res => console.log(res))
 net.get('/test/8754/666').then(res => console.log(res))
 net.get('/test/my.car').then(res => console.log(res))
 net.get('/test/2024-2030').then(res => console.log(res))
 net.get('/test/foo-bar').then(res => console.log(res))
 net.get('/test/bbccdd/ok?a=1').then(res => console.log(res))
 net.get('/test/a/b/c/d/e').then(res => console.log(res))
+net.get('/test/john?a=1&a=2&b[]=1&c[]=3&c[]=4&c[k]=5').then(res => console.log(res))
 
 ```
 
@@ -40,7 +41,7 @@ const router = new Router()
 await router.use(/^\/TEST\/\d+$/i, import('./test'))
 
 await router.use((ctx, next) => {
-	// auth check
+	// authorization checks
 	if (ctx.req.headers.get('token') === 'wrong') {
 		ctx.status = 401
 		ctx.body = { error: 'auth failed' }
@@ -49,7 +50,7 @@ await router.use((ctx, next) => {
 	}
 })
 
-router.get(/^\/test\/\d+$/, (ctx) => {
+router.put(/^\/test\/\d+$/, (ctx) => {
 	// request real internet
 	// ctx.config.url = '/'
 	// ctx.config.data = '{}'
