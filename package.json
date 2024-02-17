@@ -1,10 +1,15 @@
 {
   "name": "axios-mock-request",
-  "version": "0.0.8",
-  "main": "index.ts",
+  "version": "0.0.9",
+  "main": "index.js",
   "type": "module",
+  "types": "index.ts",
   "license": "MIT",
   "peerDependencies": {
     "axios": "*"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json; for file in *.js; do uglifyjs $file -c -m toplevel -o $file; done",
+    "update": "yarn build; yarn publish"
   }
 }

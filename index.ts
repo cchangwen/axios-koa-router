@@ -4,9 +4,9 @@ import {Context} from './router'
 
 
 function parseUrlencoded(data: string) {
-	let query = {}
+	let query: any = {}
 	for (let [k, v] of new URLSearchParams(data).entries()) {
-		let ms = /^(.+)(?:\[(.*)\])$/.exec(k)
+		let ms: any = /^(.+)(?:\[(.*)\])$/.exec(k)
 		if (ms) {
 			k = ms[1]
 			ms = ms[2]
@@ -31,7 +31,7 @@ function parseUrlencoded(data: string) {
 
 function buildRegex(path: string) {
 	let isReg = false
-	let temp = []
+	let temp: any[] = []
 	path = path.replace(/(\W):(?:(\w+)\(([^/]+)\)|(\w+))/g, (...ms) => {
 		ms[1] = ms[1].replace(/([.*+{}()\[\]|])/, '\\$1')
 		if (ms[4]) {
@@ -81,7 +81,7 @@ interface Options {
 
 export default async function (opts: Options) {
 	const {routes} = (await import(opts.routerImport/* @vite-ignore */)).default
-	for (let route: [] of routes) {
+	for (let route of routes) {
 		if (route[1].charAt) {
 			let result = buildRegex(route[1])
 			if (result.isReg) {
@@ -133,6 +133,8 @@ async function adapter(this: Adapter, config: InternalAxiosRequestConfig): Promi
 		if (method && method !== config.method) continue
 		let ms
 		if (!path || (path.exec && (ms = path.exec(pathname))) || (path === pathname)) {
+			ctx.req.matchs = ms || []
+			ctx.req.regexp = path
 			ctx.req.params = (ms && ms.groups) || {}
 			for (let cb of cbs) {
 				let next = false
@@ -145,7 +147,7 @@ async function adapter(this: Adapter, config: InternalAxiosRequestConfig): Promi
 				}
 
 				if (this.opts.beforeResponse) {
-					this.opts.beforeResponse(ctx)
+					await this.opts.beforeResponse(ctx)
 				}
 
 				if (next) {
@@ -156,6 +158,7 @@ async function adapter(this: Adapter, config: InternalAxiosRequestConfig): Promi
 					break out
 				}
 
+				// @ts-ignore
 				return {
 					config: config,
 					status: ctx.status,

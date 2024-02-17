@@ -3,6 +3,8 @@ import type {InternalAxiosRequestConfig, AxiosRequestHeaders} from 'axios';
 export class Context {
 	config: InternalAxiosRequestConfig
 	req = {} as {
+		regexp: string | RegExp
+		matchs: []
 		params: Record<string, any>
 		query: Record<string, any>
 		body: any
