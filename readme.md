@@ -34,15 +34,15 @@ net.get('/test/a/b/c/d/e').then(res => console.log(res))
 ### mocks/index.ts
 ```typescript
 import Router from 'axios-mock-request/router'
-import test from './test'
 
 const router = new Router()
 
-router.use(/^\/TEST\/\d+$/i, test)
+await router.use(/^\/TEST\/\d+$/i, import('./test'))
 
-router.use((ctx, next) => {
+await router.use((ctx, next) => {
 	// auth check
-	if (ctx.req.headers.get('x-token') === 'wrong') {
+	if (ctx.req.headers.get('token') === 'wrong') {
+		ctx.status = 401
 		ctx.body = { error: 'auth failed' }
 	} else {
 		next()
@@ -50,7 +50,9 @@ router.use((ctx, next) => {
 })
 
 router.get(/^\/test\/\d+$/, (ctx) => {
-	// Jump out from mocks, requests internet
+	// request real internet
+	// ctx.config.url = '/'
+	// ctx.config.data = '{}'
 	ctx.bypass = true
 })
 
@@ -66,7 +68,7 @@ router.get('/test/(aa)?(bb)+cc*/:name', (ctx) => {
 	ctx.body = '/test/(aa)?(bb)+cc*/:name <== ' + ctx.req.path
 })
 
-router.get('/test/**', (ctx) => {
+router.any('/test/**', (ctx) => {
 	ctx.body = '/test/** <== ' + ctx.req.path
 })
 
