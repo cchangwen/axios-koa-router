@@ -46,7 +46,7 @@ router.use((ctx, next) => {
 		ctx.body = { error: 'auth failed' }
 	} else {
 		next()
-    }
+	}
 })
 
 router.get(/^\/test\/\d+$/, (ctx) => {

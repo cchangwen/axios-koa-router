@@ -81,8 +81,8 @@ interface Options {
 
 export default async function (opts: Options) {
 	const {routes} = (await import(opts.routerImport/* @vite-ignore */)).default
-	for (let route of routes) {
-		if (route[1].bold) {
+	for (let route: [] of routes) {
+		if (route[1].charAt) {
 			let result = buildRegex(route[1])
 			if (result.isReg) {
 				route[1] = new RegExp('^' + result.path + '$')
@@ -127,36 +127,41 @@ async function adapter(this: Adapter, config: InternalAxiosRequestConfig): Promi
 		body = config.data || {}
 	}
 
-	for (let [method, path, cb] of this.routes) {
+	let ctx = new Context(config, query, body, pathname, search)
+
+	out: for (let [method, path, ...cbs] of this.routes) {
 		if (method && method !== config.method) continue
 		let ms
 		if (!path || (path.exec && (ms = path.exec(pathname))) || (path === pathname)) {
-			let ctx = new Context(config, query, body, pathname, search, ms && ms.groups)
-			let rt = cb(ctx, () => (ctx.next = true))
+			ctx.req.params = (ms && ms.groups) || {}
+			for (let cb of cbs) {
+				let next = false
+				let rt = cb(ctx, () => (next = true))
 
-			if (ctx.next) {
-				continue
-			} else {
-				await rt
-			}
+				if (next) {
+					continue
+				} else {
+					await rt
+				}
 
-			if (this.opts.beforeResponse) {
-				this.opts.beforeResponse(ctx)
-			}
+				if (this.opts.beforeResponse) {
+					this.opts.beforeResponse(ctx)
+				}
 
-			if (ctx.next) {
-				continue
-			}
+				if (next) {
+					continue
+				}
 
-			if (ctx.bypass) {
-				break
-			}
+				if (ctx.bypass) {
+					break out
+				}
 
-			return {
-				config: config,
-				status: ctx.status,
-				headers: ctx.headers,
-				data: ctx.body,
+				return {
+					config: config,
+					status: ctx.status,
+					headers: ctx.headers,
+					data: ctx.body,
+				}
 			}
 		}
 	}
