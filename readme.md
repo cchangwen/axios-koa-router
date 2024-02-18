@@ -11,12 +11,12 @@ const config: CreateAxiosDefaults = {
 
 if(import.meta.env.VITE_AXIOS_MOCK) {
 	// Use asynchronous import() to reduce the entry size of the production
-	config.adapter = (await import('axios-mock-request')).default({
+	config.adapter = await (await import('axios-mock-request')).default({
+		// where to load your mock-routes
+		router: import('/@/mocks/index.ts'),
 		// callback for debugs
 		beforeResponse(ctx) { console.log(ctx) }
 	})
-	// where to load your mock-routes
-	await config.adapter.use('/@/mocks/index.ts')
 }
 
 const net = axios.create(config);

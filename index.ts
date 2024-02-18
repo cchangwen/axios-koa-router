@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type {AxiosResponse, InternalAxiosRequestConfig} from 'axios';
+import type {AxiosResponse, InternalAxiosRequestConfig, AxiosAdapter} from 'axios';
 import type {default as Router} from './router'
 import {Context} from './router'
 
@@ -80,6 +80,7 @@ function buildRegex(path: string) {
 }
 
 interface Options {
+	router?: Router | Promise<Router>,
 	beforeResponse?: (ctx: Context) => any
 }
 
@@ -117,10 +118,13 @@ async function use(this: Adapter, router: Router | Promise<Router>): Promise<Ada
 	return this
 }
 
-export default function create(opts: Options): Adapter {
+export default async function create(opts: Options): Promise<Adapter & AxiosAdapter> {
 	let that = {opts, routes: [], use}
 	let fn = adapter.bind(that)
 	fn.use = use.bind(that)
+	if (opts.router) {
+		await fn.use(opts.router)
+	}
 	return fn
 }
 
