@@ -1,25 +1,18 @@
 ### Usage
 ```typescript
 import axios from 'axios';
-import type { CreateAxiosDefaults } from 'axios';
 
-const config: CreateAxiosDefaults = {
-	baseURL: import.meta.env.VITE_API_URL,
-	timeout: 50000,
-	withCredentials: true,
-}
+const net = axios.create({ });
 
 if(import.meta.env.VITE_AXIOS_MOCK) {
 	// Use asynchronous import() to reduce the entry size of the production
-	config.adapter = await (await import('axios-mock-request')).default({
+	net.defaults.adapter = await (await import('axios-mock-request')).default({
 		// where to load your mock-routes
 		router: import('/@/mocks/index.ts'),
 		// callback for debugs
 		beforeResponse(ctx) { console.log(ctx) }
 	})
 }
-
-const net = axios.create(config);
 
 
 net.get('/test/8754/666').then(res => console.log(res))
@@ -84,7 +77,7 @@ import Router from 'axios-mock-request/router'
 const router = new Router()
 
 router.get('/:id', (ctx) => {
-	ctx.body = ctx.req.params
+	ctx.body = ctx.req.regGroup
 })
 
 export default router

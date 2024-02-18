@@ -139,7 +139,7 @@ async function adapter(this: Adapter, config: InternalAxiosRequestConfig): Promi
 	let query = Object.assign(urlSplit[1] ? parseUrlencoded(urlSplit[1]) : {}, config.params)
 	let body: {}
 	let contentType = config.headers.getContentType()
-	if (!contentType) {
+	if (!contentType || !config.data) {
 		body = config.data || {}
 	} else if (contentType.includes('json')) {
 		body = JSON.parse(config.data)
@@ -168,12 +168,12 @@ async function adapter(this: Adapter, config: InternalAxiosRequestConfig): Promi
 					await rt
 				}
 
-				if (this.opts.beforeResponse) {
-					await this.opts.beforeResponse(ctx)
-				}
-
 				if (next) {
 					continue
+				}
+
+				if (this.opts.beforeResponse) {
+					await this.opts.beforeResponse(ctx)
 				}
 
 				if (ctx.bypass) {
