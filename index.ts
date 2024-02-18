@@ -4,11 +4,10 @@ import type {default as Router} from './router'
 import {Context} from './router'
 
 
-// @ts-ignore
-const Qs = await import('qs').then(module => module.default).catch(err => null)
+// const Qs = await import('qs').then(module => module.default).catch(err => null)
 
 function parseUrlencoded(data: string) {
-	if (Qs) return Qs.parse(data)
+	// if (Qs) return Qs.parse(data)
 	let query: any = {}
 	for (let [k, v] of new URLSearchParams(data).entries()) {
 		let ms: any = /^(.+)(?:\[(.*)\])$/.exec(k)
@@ -80,13 +79,14 @@ function buildRegex(path: string) {
 }
 
 interface Options {
-	router?: Router | Promise<Router>,
+	router?: Router | Promise<any>,
 	beforeResponse?: (ctx: Context) => any
 }
 
-async function use(this: Adapter, router: Router | Promise<Router>): Promise<Adapter> {
-	if ((<Promise<Router>>router).then) {
-		router = (await <Promise<any>>router).default
+async function use(this: Adapter, router: Router | Promise<any>): Promise<Adapter> {
+	if ((<Promise<any>>router).then) {
+		router = await router
+		router = (<any>router).default || router
 	}
 	for (let route of (<Router>router).routes) {
 		if (route[1].charAt) {
@@ -121,7 +121,7 @@ async function use(this: Adapter, router: Router | Promise<Router>): Promise<Ada
 export default async function create(opts: Options): Promise<Adapter & AxiosAdapter> {
 	let that = {opts, routes: [], use}
 	let fn = adapter.bind(that)
-	fn.use = use.bind(that)
+	Object.assign(fn, that)
 	if (opts.router) {
 		await fn.use(opts.router)
 	}

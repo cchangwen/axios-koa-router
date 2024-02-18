@@ -45,7 +45,8 @@ export default class Router {
 
 		for (let router of routers) {
 			if ((<Promise<any>>router).then) {
-				router = (await router).default
+				router = await router
+				router = (<any>router).default || router
 			}
 
 			if ((<Router>router).routes) {
