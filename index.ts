@@ -1,9 +1,14 @@
 import axios from 'axios';
 import type {AxiosResponse, InternalAxiosRequestConfig} from 'axios';
+import type {default as Router} from './router'
 import {Context} from './router'
 
 
+// @ts-ignore
+const Qs = await import('qs').then(module => module.default).catch(err => null)
+
 function parseUrlencoded(data: string) {
+	if (Qs) return Qs.parse(data)
 	let query: any = {}
 	for (let [k, v] of new URLSearchParams(data).entries()) {
 		let ms: any = /^(.+)(?:\[(.*)\])$/.exec(k)
@@ -75,13 +80,14 @@ function buildRegex(path: string) {
 }
 
 interface Options {
-	routerImport: string
 	beforeResponse?: (ctx: Context) => any
 }
 
-export default async function (opts: Options) {
-	const {routes} = (await import(opts.routerImport/* @vite-ignore */)).default
-	for (let route of routes) {
+async function use(this: Adapter, router: Router | Promise<Router>): Promise<Adapter> {
+	if ((<Promise<Router>>router).then) {
+		router = (await <Promise<any>>router).default
+	}
+	for (let route of (<Router>router).routes) {
 		if (route[1].charAt) {
 			let result = buildRegex(route[1])
 			if (result.isReg) {
@@ -106,36 +112,48 @@ export default async function (opts: Options) {
 			arr.push('$')
 			route[1] = new RegExp(arr.join(''), flags)
 		}
+		this.routes.push(route)
 	}
-	return adapter.bind({opts, routes})
+	return this
+}
+
+export default function create(opts: Options): Adapter {
+	let that = {opts, routes: [], use}
+	let fn = adapter.bind(that)
+	fn.use = use.bind(that)
+	return fn
 }
 
 interface Adapter {
 	opts: Options,
-	routes: any[][]
+	routes: any[][],
+	use: (router: Router | Promise<Router>) => Promise<Adapter>
 }
 
 async function adapter(this: Adapter, config: InternalAxiosRequestConfig): Promise<AxiosResponse> {
-	let [pathname, search] = config.url.split('?')
-	let query = search ? parseUrlencoded(search) : {}
+	let urlSplit = config.url.split('?')
+	let query = Object.assign(urlSplit[1] ? parseUrlencoded(urlSplit[1]) : {}, config.params)
 	let body: {}
-	if (config.headers.getContentType()?.includes('json')) {
+	let contentType = config.headers.getContentType()
+	if (!contentType) {
+		body = config.data || {}
+	} else if (contentType.includes('json')) {
 		body = JSON.parse(config.data)
-	} else if (config.headers.getContentType()?.includes('encoded')) {
+	} else if (contentType.includes('urlenc')) {
 		body = parseUrlencoded(config.data)
 	} else {
 		body = config.data || {}
 	}
 
-	let ctx = new Context(config, query, body, pathname, search)
+	let ctx = new Context(config, query, body, urlSplit[0], urlSplit[1])
 
 	out: for (let [method, path, ...cbs] of this.routes) {
 		if (method && method !== config.method) continue
 		let ms
-		if (!path || (path.exec && (ms = path.exec(pathname))) || (path === pathname)) {
-			ctx.req.matchs = ms || []
-			ctx.req.regexp = path
-			ctx.req.params = (ms && ms.groups) || {}
+		if (!path || (path.exec && (ms = path.exec(urlSplit[0]))) || (path === urlSplit[0])) {
+			ctx.req.regExp = path
+			ctx.req.regMatch = ms || []
+			ctx.req.regGroup = (ms && ms.groups) || {}
 			for (let cb of cbs) {
 				let next = false
 				let rt = cb(ctx, () => (next = true))

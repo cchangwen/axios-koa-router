@@ -3,27 +3,27 @@ import type {InternalAxiosRequestConfig, AxiosRequestHeaders} from 'axios';
 export class Context {
 	config: InternalAxiosRequestConfig
 	req = {} as {
-		regexp: string | RegExp
-		matchs: []
-		params: Record<string, any>
+		regExp: string | RegExp
+		regMatch: []
+		regGroup: Record<string, any>
 		query: Record<string, any>
 		body: any
 		headers: AxiosRequestHeaders
-		path: string
-		search: string
+		urlPath: string
+		urlQuery: string
 	}
 	body: any = ''
 	status = 200
 	headers: any = {}
 	bypass = false
 
-	constructor(config: InternalAxiosRequestConfig, query: any, body: any, path: string, search: string) {
+	constructor(config: InternalAxiosRequestConfig, query: any, body: any, urlPath: string, urlQuery: string) {
 		this.config = config
 		this.req.headers = config.headers
 		this.req.query = query
 		this.req.body = body
-		this.req.path = path
-		this.req.search = search || ''
+		this.req.urlPath = urlPath
+		this.req.urlQuery = urlQuery || ''
 	}
 }
 

@@ -1,15 +1,19 @@
 {
+  "homepage": "https://github.com/cchangwen/axios-mock-request",
   "name": "axios-mock-request",
-  "version": "0.0.9",
+  "version": "1.0.1",
   "main": "index.js",
   "type": "module",
   "types": "index.ts",
   "license": "MIT",
   "peerDependencies": {
-    "axios": "*"
+    "axios": "*",
+    "qs": "*"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json; for file in *.js; do uglifyjs $file -c -m toplevel -o $file; done",
-    "update": "yarn build; yarn publish"
+    "watch": "tsc -p tsconfig.json -w",
+    "build": "tsc -p tsconfig.json",
+    "uglify": "for file in *.js; do uglifyjs $file -c -m toplevel -o $file; done",
+    "upload": "yarn build; yarn uglify; yarn publish"
   }
 }
