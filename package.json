@@ -9,10 +9,16 @@
     "express",
     "router"
   ],
-  "version": "1.1.6",
+  "version": "1.1.7",
   "main": "dist/index.js",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js",
+      "browser": "./dist/min/index.js"
+    },
+    "./index": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/cjs/index.js",
