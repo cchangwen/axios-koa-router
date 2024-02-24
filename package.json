@@ -9,8 +9,8 @@
     "express",
     "router"
   ],
-  "version": "1.1.5",
-  "main": "./dist/index.js",
+  "version": "1.1.6",
+  "main": "dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -27,10 +27,11 @@
   },
   "files": [
     "dist",
-    "*.ts"
+    "*.ts",
+    "*.js"
   ],
   "type": "module",
-  "types": "./dist/adapter.d.ts",
+  "types": "adapter.ts",
   "license": "MIT",
   "bin": "./bin/npx.sh",
   "peerDependencies": {
