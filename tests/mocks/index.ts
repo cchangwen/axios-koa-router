@@ -1,4 +1,4 @@
-import Router from 'axios-mock-request/router'
+import Router from 'axios-koa-router'
 // import user, {session} from './user'
 import test from './test'
 
@@ -47,3 +47,10 @@ router.use('/test/**', (ctx) => {
 // router.use('/user', user)
 
 export default router
+
+// net.get('/test/my.code').then(res => console.log(res))
+// net.get('/test/2024-2030').then(res => console.log(res))
+// net.get('/test/foo-bar').then(res => console.log(res))
+// net.get('/test/bbccdd/ok?a=1').then(res => console.log(res))
+// net.get('/test/a/b/c/d/e').then(res => console.log(res))
+// net.get('/test/john?a=1&a=2&b[]=1&c[]=3&c[]=4&c[k]=5').then(res => console.log(res))

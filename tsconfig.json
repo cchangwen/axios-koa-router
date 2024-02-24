@@ -2,13 +2,15 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
+    "declaration": true,
     "paths": {
       "axios": [
         "/home/nasa/.config/yarn/global/node_modules/axios/index.d.ts"
       ]
-    }
+    },
+    "outDir": "dist"
   },
   "include": [
-    "index.ts"
+    "adapter.ts"
   ]
 }

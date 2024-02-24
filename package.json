@@ -1,19 +1,45 @@
 {
-  "homepage": "https://github.com/cchangwen/axios-mock-request",
-  "name": "axios-mock-request",
-  "version": "1.1.2",
-  "main": "index.js",
+  "homepage": "https://github.com/cchangwen/axios-koa-router",
+  "name": "axios-koa-router",
+  "description": "mock axios like koa express",
+  "keywords": [
+    "axios",
+    "mock",
+    "koa",
+    "express",
+    "router"
+  ],
+  "version": "1.1.4",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js",
+      "browser": "./dist/min/index.js"
+    },
+    "./adapter": {
+      "types": "./dist/adapter.d.ts",
+      "import": "./dist/adapter.js",
+      "require": "./dist/cjs/adapter.js",
+      "browser": "./dist/min/adapter.js"
+    }
+  },
+  "files": [
+    "dist",
+    "./*.ts"
+  ],
   "type": "module",
-  "types": "index.ts",
+  "types": "./dist/adapter.d.ts",
   "license": "MIT",
+  "bin": "./bin/npx.sh",
   "peerDependencies": {
-    "axios": "*",
-    "qs": "*"
+    "axios": "*"
   },
   "scripts": {
     "watch": "tsc -p tsconfig.json -w",
-    "build": "tsc -p tsconfig.json",
-    "uglify": "for file in *.js; do uglifyjs $file -c -m toplevel -o $file; done",
+    "build": "tsc -p tsconfig.json; tsc -p tsconfig.json -d false -m commonjs --esModuleInterop --outDir dist/cjs",
+    "uglify": "cd dist; mkdir -p min; for file in *.js; do uglifyjs $file -c -m toplevel -o min/$file; done",
     "upload": "yarn build && yarn uglify && yarn publish"
   }
 }

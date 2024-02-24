@@ -1,196 +1,105 @@
-import axios from 'axios';
-import type {AxiosResponse, InternalAxiosRequestConfig, AxiosAdapter} from 'axios';
-import type {default as Router} from './router'
-import {Context} from './router'
+import type {InternalAxiosRequestConfig, AxiosRequestHeaders} from 'axios';
 
+export class Context {
+	config: InternalAxiosRequestConfig
+	req = {} as {
+		regExp: string | RegExp
+		regMatch: []
+		regNamed: Record<string, any>
+		query: Record<string, any>
+		body: any
+		headers: AxiosRequestHeaders
+		urlPath: string
+		urlQuery: string
+	}
+	body: any = ''
+	status = 200
+	headers: any = {}
+	bypass = false
 
-// const Qs = await import('qs').then(module => module.default).catch(err => null)
+	constructor(config: InternalAxiosRequestConfig, query: any, body: any, urlPath: string, urlQuery: string) {
+		this.config = config
+		this.req.headers = config.headers
+		this.req.query = query
+		this.req.body = body
+		this.req.urlPath = urlPath
+		this.req.urlQuery = urlQuery || ''
+	}
+}
 
-function parseUrlencoded(data: string) {
-	// if (Qs) return Qs.parse(data)
-	let query: any = {}
-	for (let [k, v] of new URLSearchParams(data).entries()) {
-		let ms: any = /^(.+)(?:\[(.*)\])$/.exec(k)
-		if (ms) {
-			k = ms[1]
-			ms = ms[2]
-			if (!query[k]) {
-				query[k] = []
-			}
+type Path = string | RegExp
+type callback = (ctx: Context, next: Function) => any
+type CB = callback | callback[]
+type Call = Router | CB | Promise<any>
+
+export default class Router {
+	routes = [] as any[][]
+
+	async use(prefix: Path | Call, ...routers: Call[]) {
+		if (!(<string>prefix).charAt && !(<RegExp>prefix).exec) {
+			routers.unshift(<Call>prefix)
+			prefix = ''
+		} else if (!routers[0]) {
+			throw prefix
 		}
-		if (k in query) {
-			if (ms === null) {
-				query[k] = v
-			} else if (ms) {
-				query[k][ms] = v
+
+		for (let router of routers) {
+			if ((<Promise<any>>router).then) {
+				router = await router
+				router = (<any>router).default || router
+			}
+
+			if ((<Router>router).routes) {
+				for (let [method, path, ...cbs] of (<Router>router).routes) {
+					if (!(<string>prefix).charAt || !path.charAt) {
+						path = path.push ? [...path] : [path]
+						path.unshift(prefix)
+						this.http(method, path, cbs)
+					} else {
+						this.http(method, prefix + path, cbs)
+					}
+				}
 			} else {
-				query[k].push(v)
-			}
-		} else {
-			query[k] = v
-		}
-	}
-	return query
-}
-
-function buildRegex(path: string) {
-	let isReg = false
-	let temp: any[] = []
-	path = path.replace(/(\W):(?:(\w+)\(([^/]+)\)|(\w+))/g, (...ms) => {
-		ms[1] = ms[1].replace(/([.*+{}()\[\]|])/, '\\$1')
-		if (ms[4]) {
-			temp.push(`${ms[1]}(?<${ms[4]}>[^/]+)`)
-		} else {
-			temp.push(`${ms[1]}(?<${ms[2]}>${ms[3]})`)
-		}
-		return '#' + (temp.length - 1) + '#'
-	})
-	path = path.replace('**', () => {
-		temp.push('.*')
-		return '#' + (temp.length - 1) + '#'
-	})
-	path = path.replace('*', () => {
-		temp.push('[^/]*')
-		return '#' + (temp.length - 1) + '#'
-	})
-	path = path.replace('?', () => {
-		temp.push('?')
-		return '#' + (temp.length - 1) + '#'
-	})
-	path = path.replace('+', () => {
-		temp.push('+')
-		return '#' + (temp.length - 1) + '#'
-	})
-	path = path.replace(/\(.+?\)/, (ms) => {
-		temp.push(ms)
-		return '#' + (temp.length - 1) + '#'
-	})
-	path = path.replace('.', () => {
-		temp.push('\\.')
-		return '#' + (temp.length - 1) + '#'
-	})
-	if (temp.length) {
-		isReg = true
-		for (let [ix, str] of temp.entries()) {
-			path = path.replace('#' + ix + '#', str)
-		}
-	}
-	return {isReg, path}
-}
-
-interface Options {
-	router?: Router | Promise<any>,
-	beforeResponse?: (ctx: Context) => any
-}
-
-async function use(this: Adapter, router: Router | Promise<any>): Promise<Adapter> {
-	if ((<Promise<any>>router).then) {
-		router = await router
-		router = (<any>router).default || router
-	}
-	for (let route of (<Router>router).routes) {
-		if (route[1].charAt) {
-			let result = buildRegex(route[1])
-			if (result.isReg) {
-				route[1] = new RegExp('^' + result.path + '$')
-			}
-		} else if (route[1].push) {
-			let flags = ''
-			let arr = []
-			for (let item of route[1]) {
-				if (item.exec) {
-					arr.push(item.toString().replace(/^\/\^?|\$?\/(\w*)$/g, (...ms) => {
-						if (ms[1] && ms[1].includes('i')) {
-							flags = 'i'
-						}
-						return ''
-					}))
-				} else {
-					arr.push(buildRegex(item).path)
-				}
-			}
-			arr.unshift('^')
-			arr.push('$')
-			route[1] = new RegExp(arr.join(''), flags)
-		}
-		this.routes.push(route)
-	}
-	return this
-}
-
-export default async function create(opts: Options): Promise<Adapter & AxiosAdapter> {
-	let that = {opts, routes: [], use}
-	let fn = adapter.bind(that)
-	Object.assign(fn, that)
-	if (opts.router) {
-		await fn.use(opts.router)
-	}
-	return fn
-}
-
-interface Adapter {
-	opts: Options,
-	routes: any[][],
-	use: (router: Router | Promise<Router>) => Promise<Adapter>
-}
-
-async function adapter(this: Adapter, config: InternalAxiosRequestConfig): Promise<AxiosResponse> {
-	let urlSplit = config.url.split('?')
-	let query = Object.assign(urlSplit[1] ? parseUrlencoded(urlSplit[1]) : {}, config.params)
-	let body: {}
-	let contentType = config.headers.getContentType()
-	if (!contentType || !config.data) {
-		body = config.data || {}
-	} else if (contentType.includes('json')) {
-		body = JSON.parse(config.data)
-	} else if (contentType.includes('urlenc')) {
-		body = parseUrlencoded(config.data)
-	} else {
-		body = config.data || {}
-	}
-
-	let ctx = new Context(config, query, body, urlSplit[0], urlSplit[1])
-
-	out: for (let [method, path, ...cbs] of this.routes) {
-		if (method && method !== config.method) continue
-		let ms
-		if (!path || (path.exec && (ms = path.exec(urlSplit[0]))) || (path === urlSplit[0])) {
-			ctx.req.regExp = path
-			ctx.req.regMatch = ms || []
-			ctx.req.regGroup = (ms && ms.groups) || {}
-			for (let cb of cbs) {
-				let next = false
-				let rt = cb(ctx, () => (next = true))
-
-				if (next) {
-					continue
-				} else {
-					await rt
-				}
-
-				if (next) {
-					continue
-				}
-
-				if (this.opts.beforeResponse) {
-					await this.opts.beforeResponse(ctx)
-				}
-
-				if (ctx.bypass) {
-					break out
-				}
-
-				// @ts-ignore
-				return {
-					config: config,
-					status: ctx.status,
-					headers: ctx.headers,
-					data: ctx.body,
-				}
+				this.http('', <Path>prefix, <any>router)
 			}
 		}
+		return this
 	}
 
-	delete config.adapter
-	return axios(config)
+	http(method: string, path: Path, ...cb: CB[]) {
+		let arr: any[] = [method, path]
+		for (let c of cb) {
+			if ((<[]>c).push) {
+				arr.push(...<[]>c)
+			} else {
+				arr.push(c)
+			}
+		}
+		this.routes.push(arr)
+		return this
+	}
+
+	any(path: Path, ...cb: CB[]) {
+		return this.http('', path, ...cb)
+	}
+
+	get(path: Path, ...cb: CB[]) {
+		return this.http('get', path, ...cb)
+	}
+
+	post(path: Path, ...cb: CB[]) {
+		return this.http('post', path, ...cb)
+	}
+
+	put(path: Path, ...cb: CB[]) {
+		return this.http('put', path, ...cb)
+	}
+
+	delete(path: Path, ...cb: CB[]) {
+		return this.http('delete', path, ...cb)
+	}
+
+	options(path: Path, ...cb: CB[]) {
+		return this.http('options', path, ...cb)
+	}
 }

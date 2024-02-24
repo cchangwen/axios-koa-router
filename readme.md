@@ -1,12 +1,15 @@
+mock axios like koa express
+===========================
+
 ### Usage
 ```typescript
 import axios from 'axios';
 
 const net = axios.create({ });
 
-if(import.meta.env.VITE_AXIOS_MOCK) {
+if(ENABLE_AXIOS_MOCK) {
 	// Use asynchronous import() to reduce the entry size of the production
-	net.defaults.adapter = await (await import('axios-mock-request')).default({
+	net.defaults.adapter = await (await import('axios-koa-router/adapter')).default({
 		// where to load your mock-routes
 		router: import('/@/mocks/index.ts'),
 		// callback for debugs
@@ -15,23 +18,16 @@ if(import.meta.env.VITE_AXIOS_MOCK) {
 }
 
 
-net.get('/test/8754/666').then(res => console.log(res))
-net.get('/test/my.car').then(res => console.log(res))
-net.get('/test/2024-2030').then(res => console.log(res))
-net.get('/test/foo-bar').then(res => console.log(res))
-net.get('/test/bbccdd/ok?a=1').then(res => console.log(res))
-net.get('/test/a/b/c/d/e').then(res => console.log(res))
-net.get('/test/john?a=1&a=2&b[]=1&c[]=3&c[]=4&c[k]=5').then(res => console.log(res))
+net.get('/hello/world').then(res => console.log(res))
+
 
 ```
 
 ### mocks/index.ts
 ```typescript
-import Router from 'axios-mock-request/router'
+import Router from 'axios-koa-router'
 
 const router = new Router()
-
-await router.use(/^\/TEST\/\d+$/i, import('./test'))
 
 await router.use((ctx, next) => {
 	// authorization checks
@@ -43,41 +39,51 @@ await router.use((ctx, next) => {
 	}
 })
 
-router.put(/^\/test\/\d+$/, (ctx) => {
-	// request real internet
-	// ctx.config.url = '/'
-	// ctx.config.data = '{}'
-	ctx.bypass = true
+router.get('/hello/world', (ctx) => {
+    ctx.body = 'hello world'
 })
 
-router.get('/test/:from(\\d+)-:to', (ctx) => {
-	ctx.body = '/test/:from(\\d+)-:to <== ' + ctx.req.path
-})
-
-router.get('/test/:name', (ctx) => {
-	ctx.body = '/test/:name <== ' + ctx.req.path
-})
-
-router.get('/test/(aa)?(bb)+cc*/:name', (ctx) => {
-	ctx.body = '/test/(aa)?(bb)+cc*/:name <== ' + ctx.req.path
-})
-
-router.any('/test/**', (ctx) => {
-	ctx.body = '/test/** <== ' + ctx.req.path
-})
+// use sub routers
+await router.use('/test', import('./test'))
 
 export default router
 
 ```
 
+
+
 ### mocks/test/index.ts
 ```typescript
-import Router from 'axios-mock-request/router'
+import Router from 'axios-koa-router'
 
 const router = new Router()
 
-router.get('/:id', (ctx) => {
-	ctx.body = ctx.req.regGroup
+// request real internet
+router.put('/bypass', (ctx) => {
+    // ctx.config.url = '/'
+    // ctx.config.data = '{}'
+    ctx.bypass = true
+})
+
+// named path params
+router.get('/bar/:name', (ctx) => {
+    ctx.body = ctx.req.regNamed
+})
+router.get('/foo/:from(\\d+)-:to', (ctx) => {
+    ctx.body = ctx.req.regNamed
+})
+
+// patterns
+router.get('/bzz/(aa)?(bb)+cc*/:name', (ctx) => {
+    ctx.body = ctx.req.path
+})
+router.any('/bzk/**', (ctx) => {
+    ctx.body = ctx.req.path
+})
+
+// regexp
+router.get(/^\/ReGeX\/(\d+)\/(\w+)$/i, (ctx) => {
+	ctx.body = ctx.req.regMatch
 })
 
 export default router
